@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">TAVANA Studio</string>
+    <string name="studio_title">استودیوی هوشمند صدا به ویدیو</string>
+    <string name="studio_subtitle">تبدیل صوت و سخنرانی به ویدیوی حرفه‌ای همراه با تصویرسازی و زیرنویس</string>
+    <string name="step_badge">گام ۱ از ۵: آماده‌سازی صدا</string>
+    <string name="btn_select_audio">انتخاب فایل صوتی از دستگاه</string>
+    <string name="btn_change_audio">تغییر فایل صوتی</string>
+    <string name="btn_remove_audio">حذف از پروژه</string>
+    <string name="supported_formats">فرمت‌های پشتیبانی‌شده: MP3, WAV, M4A, AAC, OGG</string>
+    <string name="audio_details_title">مشخصات فایل صوتی</string>
+    <string name="audio_name_label">نام فایل</string>
+    <string name="audio_format_label">نوع / فرمت</string>
+    <string name="audio_duration_label">مدت زمان</string>
+    <string name="audio_size_label">حجم فایل</string>
+    <string name="status_ready_for_playback">صدا بارگذاری شد و آمادهٔ پخش است</string>
+    <string name="status_no_audio">هنوز فایلی انتخاب نشده است</string>
+    <string name="hint_select_audio">برای شروع کار روی دکمهٔ «انتخاب فایل صوتی» ضربه بزنید.</string>
+    <string name="section_transcript_title">متن سخنرانی</string>
+    <string name="section_transcript_desc">استخراج هوشمند گفتار به نوشتار فارسی (در گام ۲ فعال می‌شود)</string>
+    <string name="section_scenes_title">صحنه‌ها و تصاویر</string>
+    <string name="section_scenes_desc">تولید هوشمند سناریو تصویری مرتبط با سخنرانی (در گام ۳ فعال می‌شود)</string>
+    <string name="section_subtitles_title">زیرنویس هماهنگ</string>
+    <string name="section_subtitles_desc">تولید زیرنویس همگام با زمان‌بندی دقیق صدا (در گام ۴ فعال می‌شود)</string>
+    <string name="section_video_title">خروجی ویدیو (MP4)</string>
+    <string name="section_video_desc">رندر نهایی ویدیو با ادغام صدا، تصاویر و زیرنویس (در گام ۵ فعال می‌شود)</string>
+    <string name="status_upcoming">در انتظار مراحل بعدی</string>
+    <string name="dialog_remove_title">حذف فایل از پروژه</string>
+    <string name="dialog_remove_message">آیا مایلید این فایل صوتی از پروژه خارج شود؟ توجه داشته باشید که فایل اصلی در حافظه دستگاه شما بدون تغییر باقی می‌ماند.</string>
+    <string name="btn_confirm_remove">حذف از پروژه</string>
+    <string name="btn_cancel">انصراف</string>
+    <string name="error_file_open">امکان خواندن این فایل وجود ندارد یا فرمت آن نامعتبر است.</string>
+    <string name="error_playback">خطا در پخش فایل صوتی. لطفاً فایل دیگری انتخاب کنید.</string>
+</resources>

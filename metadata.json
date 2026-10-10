@@ -1,0 +1,6 @@
+{
+  "name": "TAVANA Studio",
+  "description": "استودیوی هوشمند تبدیل صوت و سخنرانی فارسی به ویدیو",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
