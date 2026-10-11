@@ -46,7 +46,7 @@ class VoiceAcousticDspService(private val context: Context) {
                             RoomSizePreset.STUDIO_WARM -> PresetReverb.PRESET_SMALLROOM
                             RoomSizePreset.ENGAGING_ROOM -> PresetReverb.PRESET_MEDIUMHALL
                             RoomSizePreset.ACOUSTIC_HALL -> PresetReverb.PRESET_LARGEHALL
-                            RoomSizePreset.INTIMATE_BOOTH -> PresetReverb.PRESET_ROOM
+                            RoomSizePreset.INTIMATE_BOOTH -> PresetReverb.PRESET_SMALLROOM
                         }
                         enabled = settings.isEnabled
                     }
@@ -111,7 +111,7 @@ class VoiceAcousticDspService(private val context: Context) {
                     RoomSizePreset.STUDIO_WARM -> PresetReverb.PRESET_SMALLROOM
                     RoomSizePreset.ENGAGING_ROOM -> PresetReverb.PRESET_MEDIUMHALL
                     RoomSizePreset.ACOUSTIC_HALL -> PresetReverb.PRESET_LARGEHALL
-                    RoomSizePreset.INTIMATE_BOOTH -> PresetReverb.PRESET_ROOM
+                    RoomSizePreset.INTIMATE_BOOTH -> PresetReverb.PRESET_SMALLROOM
                 }
                 pReverb.enabled = settings.isEnabled
             } catch (e: Exception) {
