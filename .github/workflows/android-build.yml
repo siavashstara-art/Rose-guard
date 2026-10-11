@@ -11,6 +11,8 @@ jobs:
   build-and-package:
     name: Build Debug APK, Release APK and Release AAB
     runs-on: ubuntu-latest
+    env:
+      JAVA_TOOL_OPTIONS: "-Djava.awt.headless=true -Dfile.encoding=UTF-8"
 
     steps:
       - name: Checkout Repository
@@ -23,41 +25,62 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Grant execute permission for Gradle wrapper (if present)
-        run: chmod +x gradlew || true
-
-      - name: Decode Release Keystore (from Repository Secrets)
-        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
-        env:
-          RELEASE_KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      - name: Setup Environment Files
         run: |
-          echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > my-upload-key.jks
-          echo "KEYSTORE_PATH=$GITHUB_WORKSPACE/my-upload-key.jks" >> $GITHUB_ENV
-          echo "STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
-          echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
-
-      - name: Build Debug APK (For Testing & Sideloading)
-        run: gradle assembleDebug --stacktrace
-
-      - name: Build Release APK & AAB
-        run: |
-          if [ -f "my-upload-key.jks" ]; then
-            echo "Building signed Release APK and AAB..."
-            gradle assembleRelease bundleRelease --stacktrace
-          else
-            echo "No production keystore secret configured in GitHub. Building unsigned Release APK and Debug artifacts."
-            gradle assembleDebug bundleDebug --stacktrace
+          # Ensure .env exists so secrets plugin does not fail
+          if [ ! -f ".env" ] && [ -f ".env.example" ]; then
+            cp .env.example .env
+          elif [ ! -f ".env" ]; then
+            touch .env
           fi
+
+      - name: Setup Debug Keystore (Resolves validateSigningDebug)
+        run: |
+          # If debug.keystore is missing, restore from base64 or generate standard debug keystore
+          if [ -f "debug.keystore.base64" ] && [ ! -s "debug.keystore" ]; then
+            echo "Restoring debug.keystore from debug.keystore.base64..."
+            base64 -d debug.keystore.base64 > debug.keystore
+          fi
+          if [ ! -f "debug.keystore" ] || [ ! -s "debug.keystore" ]; then
+            echo "Generating standard debug.keystore..."
+            keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          ls -l debug.keystore
+
+      - name: Setup Release Keystore (Resolves validateSigningRelease)
+        env:
+          KEYSTORE_SECRET: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_SECRET" ]; then
+            echo "Decoding release keystore from GitHub Secret..."
+            echo "$KEYSTORE_SECRET" | base64 -d > my-upload-key.jks
+            echo "KEYSTORE_PATH=$GITHUB_WORKSPACE/my-upload-key.jks" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+            echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+          else
+            echo "No custom production keystore secret found; generating CI upload keystore for APK/AAB..."
+            keytool -genkeypair -v -keystore my-upload-key.jks -storepass android -alias upload -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Tavana Studio,O=Tavana,C=IR"
+            echo "KEYSTORE_PATH=$GITHUB_WORKSPACE/my-upload-key.jks" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=android" >> $GITHUB_ENV
+            echo "KEY_ALIAS=upload" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=android" >> $GITHUB_ENV
+          fi
+          ls -l my-upload-key.jks
+
+      - name: Build Debug APK & Release APK & Release AAB Bundle
+        run: |
+          gradle assembleDebug assembleRelease bundleRelease --stacktrace
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: tavana-studio-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 14
 
-      - name: Upload Release APK Artifact (if produced)
+      - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -65,7 +88,7 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           retention-days: 30
 
-      - name: Upload Release AAB Bundle (if produced)
+      - name: Upload Release AAB Bundle (For Google Play / App Stores)
         uses: actions/upload-artifact@v4
         if: always()
         with:
