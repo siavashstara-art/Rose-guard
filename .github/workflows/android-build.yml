@@ -3,9 +3,25 @@ name: TAVANA Android Studio CI/CD Build & Release
 on:
   push:
     branches: [ "main", "master" ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:
+    inputs:
+      create_github_release:
+        description: 'Publish automated GitHub Release with APK & AAB attachments'
+        required: false
+        type: boolean
+        default: true
+      release_tag:
+        description: 'Release Tag (e.g. v1.0.0). Defaults to automated timestamp tag if left blank'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: write
 
 jobs:
   build-and-package:
@@ -17,13 +33,19 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
 
       - name: Setup Environment Files
         run: |
@@ -72,6 +94,22 @@ jobs:
         run: |
           gradle assembleDebug assembleRelease bundleRelease --stacktrace
 
+      - name: Prepare and Organize Distribution Packages
+        run: |
+          mkdir -p dist_release
+          
+          # Copy and standardize filenames for direct distribution
+          find app/build/outputs/apk/release/ -name "*.apk" -exec cp {} dist_release/TavanaStudio-Release.apk \;
+          find app/build/outputs/apk/debug/ -name "*.apk" -exec cp {} dist_release/TavanaStudio-Debug.apk \;
+          find app/build/outputs/bundle/release/ -name "*.aab" -exec cp {} dist_release/TavanaStudio-Release.aab \;
+          
+          # Generate SHA256 checksums
+          cd dist_release
+          sha256sum * > SHA256SUMS.txt || true
+          cd ..
+          
+          ls -la dist_release/
+
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         if: always()
@@ -88,10 +126,51 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           retention-days: 30
 
-      - name: Upload Release AAB Bundle (For Google Play / App Stores)
+      - name: Upload Release AAB Bundle (For Google Play / Bazaar / Myket)
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: tavana-studio-release-aab
           path: app/build/outputs/bundle/release/*.aab
           retention-days: 30
+
+      - name: Determine Release Tag
+        id: release_info
+        if: (startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_github_release == 'true')
+        run: |
+          if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+          elif [ -n "${{ github.event.inputs.release_tag }}" ]; then
+            TAG_NAME="${{ github.event.inputs.release_tag }}"
+          else
+            TAG_NAME="v1.0.$(date +'%Y%m%d%H%M')"
+          fi
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "release_title=TAVANA Studio $TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Publish Automated GitHub Release with APK & AAB
+        uses: softprops/action-gh-release@v2
+        if: (startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_github_release == 'true')
+        with:
+          tag_name: ${{ steps.release_info.outputs.tag_name }}
+          name: ${{ steps.release_info.outputs.release_title }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            dist_release/TavanaStudio-Release.apk
+            dist_release/TavanaStudio-Debug.apk
+            dist_release/TavanaStudio-Release.aab
+            dist_release/SHA256SUMS.txt
+          body: |
+            ## 📱 انتشار خودکار بسته نرم‌افزاری استودیو توانا (TAVANA Studio)
+            
+            بسته‌های خروجی شامل نسخه آماده نصب بر روی تلفن همراه (APK) و بسته رسمی ویژه انتشار در فروشگاه‌ها (AAB) به صورت خودکار تولید و امضا شدند:
+            
+            - **نسخه انتشار نهایی (Release APK):** `TavanaStudio-Release.apk` (قابل نصب مستقیم روی موبایل)
+            - **بسته رسمی مارکت‌ها (Release AAB):** `TavanaStudio-Release.aab` (ویژه Google Play، کافه بازار، مایکت)
+            - **نسخه عیب‌یابی (Debug APK):** `TavanaStudio-Debug.apk` (ویژه تست و توسعه)
+            - **چک‌سام امنیتی:** `SHA256SUMS.txt`
+            
+            این ساخت به صورت کاملاً خودکار توسط GitHub Actions CI/CD همراه با امضای رسمی انجام شده است.
+

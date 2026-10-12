@@ -10,16 +10,14 @@ import java.util.UUID
 object SpeechSegmentationEngine {
 
     val SAMPLE_SALONYAR_SPEECH = """
-سلام و درود به همه همکاران و مدیران سالن‌های زیبایی، مزون‌ها و فعالان حوزه زیبایی.
-امروز اینجا هستیم تا سامانه یکپارچه «سالنیار» از مجموعه TAVANA را به شما معرفی کنیم.
-بزرگترین چالش سالن‌های زیبایی امروز، مدیریت شلوغی، هدررفت نوبت‌ها و بازگرداندن مشتریان قبلی است.
-سالنیار برای هر سالن زیبایی یک ویترین اختصاصی و شیک ایجاد می‌کند تا نمونه‌کارها، خدمات و تعرفه‌ها شفاف دیده شوند.
-سیستم رزرو آنلاین سالنیار به مشتریان امکان می‌دهد در هر ساعت از شبانه‌روز نوبت بگیرند و پیامک یادآوری دریافت کنند.
-قابلیت کلیدی سالنیار، بازگرداندن هوشمند مشتریانی است که بیش از سه ماه به سالن مراجعه نکرده‌اند با پیشنهادهای مناسبتی.
-پیشنهاد ویژه تجاری ما: تشکیل شبکه همکاری بین سالن‌های زیبایی، مزون‌های لباس عروس و تالارهای پذیرایی است.
-در این مدل همکاری، با معرفی مشتری متقابل میان سالن و مزون، درصد کمیسیون توافقی به طرفین تعلق می‌گیرد.
-همچنین استودیوی توانا در ساخت محتوای ویدیویی، تیزر تبلیغاتی و استوری‌های باکیفیت شما را پشتیبانی می‌کند.
-در فازهای توسعه آینده، سیستم هوش مصنوعی تحلیل رفتار مشتری و پیش‌بینی تقاضای فصلی به سالنیار افزوده خواهد شد.
+با سلام و احترام؛ من سیاوش علیمیری، طراح سیستم‌ها و اپلیکیشن‌های تخصصی و سازنده شهر متاورسی «توانا» هستم. تاکنون بیش از ۲۵ نرم‌افزار کاربردی در سطح جهان طراحی کرده‌ام.
+در طول ماه، عروس‌ها و مشتریان زیادی برای خدمات زیبایی به سالن شما مراجعه می‌کنند؛ اما چالش اصلی این است که خیلی از آنها بعد از استعلام قیمت، ممکن است به ده سالن دیگر سر بزنند و برنگردند!
+ما با اپلیکیشن «سالن‌یار» این مسیر را دگرگون کرده‌ایم! کافی است از عروس یک عکس ساده بگیرید. سامانه ما دارای ۵۰ مدل لباس عروس ترند روز و ۳۵ مدل کت‌شلوار داماد است.
+مشتری می‌تواند پیش از مراسم، لباس عروس، مدل شینیون و آرایش را به صورت مجازی روی اندام و چهره خود ببیند! این برنامه کاملاً آفلاین عمل می‌کند و امنیت کامل تصاویر مشتری را تضمین خواهد کرد.
+همچنین این اپلیکیشن مجهز به سیستم مدیریت برگشت مشتری است که به آن سیستم «برگردان مشتری» می‌گوییم؛ این قابلیت مراجعین قبلی را شناسایی کرده و به سالن شما بازمی‌گرداند.
+از دیگر امکانات فوق‌العاده برنامه، حفظ کامل حریم خصوصی با قابلیت تار کردن (Blur) و پیکسل کردن چهره افراد در عکس‌ها، توانایی ساخت خودکار استوری و تیزرهای ویدیویی برای اینستاگرام، و قابلیت شخصی‌سازی کامل اپلیکیشن با قرار دادن عکس، آدرس، تلفن، مشخصات و کانال‌های اینترنتی سالن شماست.
+از شما دعوت می‌کنم این برنامه را برای آرایشگاهتان تهیه کنید؛ این برنامه فقط و فقط به صورت یک‌ساله و با قیمت استثنایی ۹ میلیون تومان به فروش می‌رسد، هزینه‌ای که با جذب اولین عروس یا برگشت اولین مشتری‌ها بلافاصله برای شما جبران خواهد شد!
+علاوه بر این، شما با بازاریابی و معرفی محصولات ما به سایر همکاران نیز می‌توانید درآمد مازاد کسب کنید که جزئیات آن را همکاران ما خدمت شما ارائه خواهند کرد. با تشکر از توجه شما.
 """.trimIndent()
 
     /**
@@ -180,56 +178,57 @@ object SpeechSegmentationEngine {
             val text = seg.text
 
             val (tourImage, tourDescription, displayType) = when {
-                text.contains("عروس", ignoreCase = true) || text.contains("مزون", ignoreCase = true) || text.contains("میکاپ", ignoreCase = true) || text.contains("گریم", ignoreCase = true) -> {
+                text.contains("سیاوش علیمیری", ignoreCase = true) || text.contains("متاورس", ignoreCase = true) || text.contains("توانا", ignoreCase = true) || text.contains("۲۵", ignoreCase = true) -> {
                     Triple(
-                        "img_tour_bridal",
-                        "سوئیت شاهانه عروس VIP با آینه‌های میکاپ هالیوودی، گل‌های ارکیده و دکوراسیون مجلل برای جذب مشتریان خاص و خدمات تشریفات",
+                        "tavana_icon",
+                        "فاز ۱: محیط مدرن فناوری و شهر متاورسی توانا، معرفی مهندس سیاوش علیمیری، طراح ۲۵ نرم‌افزار جهانی با نشان رسمی و پرسونای قدرتمند مهندسی",
                         VisualDisplayType.IMAGE
                     )
                 }
-                text.contains("پوست", ignoreCase = true) || text.contains("اسپا", ignoreCase = true) || text.contains("فیشیال", ignoreCase = true) || text.contains("آرامش", ignoreCase = true) -> {
-                    Triple(
-                        "img_tour_spa",
-                        "اتاق اسپا و مراقبت پوست آرامش‌بخش با شمع‌های معطر، رایحه اسطوخودوس و تخت ماساژ لوکس برای ایجاد وفاداری عمیق مشتریان",
-                        VisualDisplayType.IMAGE
-                    )
-                }
-                text.contains("ناخن", ignoreCase = true) || text.contains("مانیکور", ignoreCase = true) || text.contains("پدیکور", ignoreCase = true) || text.contains("بازگرداندن", ignoreCase = true) -> {
-                    Triple(
-                        "img_tour_nail",
-                        "بار مدرن مانیکور، پدیکور و طراحی ناخن با استند صدها رنگ لاک متنوع و مبلمان شیک برای جذب حداکثری مراجعین هفتگی",
-                        VisualDisplayType.IMAGE
-                    )
-                }
-                text.contains("مو", ignoreCase = true) || text.contains("رنگ", ignoreCase = true) || text.contains("کراتین", ignoreCase = true) || text.contains("استایل", ignoreCase = true) || text.contains("ویترین", ignoreCase = true) -> {
-                    Triple(
-                        "img_tour_hair",
-                        "لاین تخصصی استایل و خدمات زیبایی مو با صندلی‌های چرم ارگونومیک، آینه‌های قوسی بک‌لایت و ایستگاه‌های شستشوی مدرن",
-                        VisualDisplayType.IMAGE
-                    )
-                }
-                text.contains("رزرو", ignoreCase = true) || text.contains("سیستم", ignoreCase = true) -> {
+                text.contains("چالش", ignoreCase = true) || text.contains("استعلام قیمت", ignoreCase = true) || text.contains("ده سالن", ignoreCase = true) || text.contains("برنگردند", ignoreCase = true) -> {
                     Triple(
                         "img_tour_reception",
-                        "اینفوگرافیک رزرو هوشمند نوبت‌ها در کنار لابی مجلل و پذیرش آرامش‌بخش سالن برای جذب مشتریان مدرن",
-                        VisualDisplayType.HYBRID
+                        "فاز ۲: سالن زیبایی پر رفت‌وآمد و لابی مجلل، همراه با نمایش چالش تردید مراجعین و عدم بازگشت پس از استعلام قیمت",
+                        VisualDisplayType.IMAGE
                     )
                 }
-                text.contains("پیشنهاد", ignoreCase = true) || text.contains("کمیسیون", ignoreCase = true) -> {
+                text.contains("عکس ساده", ignoreCase = true) || text.contains("۵۰ مدل لباس عروس", ignoreCase = true) || text.contains("۳۵ مدل کت", ignoreCase = true) || text.contains("کت‌شلوار", ignoreCase = true) -> {
                     Triple(
                         "img_tour_bridal",
-                        "طرح همکاری مشارکتی سالن و مزون با نمایش سوئیت عروس و کارت درصد همکاری تجاری",
-                        VisualDisplayType.HYBRID
+                        "فاز ۳: قلاب جذب سالن‌یار در سوئیت عروس VIP، عکاسی ساده از چهره و کاتالوگ سه‌بعدی ۵۰ لباس عروس ترند روز و ۳۵ کت‌شلوار داماد",
+                        VisualDisplayType.IMAGE
+                    )
+                }
+                text.contains("پرو", ignoreCase = true) || text.contains("مجازی", ignoreCase = true) || text.contains("شینیون", ignoreCase = true) || text.contains("آفلاین", ignoreCase = true) || text.contains("امنیت", ignoreCase = true) -> {
+                    Triple(
+                        "img_tour_spa",
+                        "فاز ۴: پرو جادویی مجازی لباس عروس و شینیون روی چهره با حالت تغییر قبل و بعد (Before/After) و کارکرد کاملاً آفلاین با امنیت ۱۰۰٪ تصاویر",
+                        VisualDisplayType.IMAGE
+                    )
+                }
+                text.contains("برگردان", ignoreCase = true) || text.contains("تار کردن", ignoreCase = true) || text.contains("پیکسل", ignoreCase = true) || text.contains("استوری", ignoreCase = true) || text.contains("شخصی‌سازی", ignoreCase = true) || text.contains("حریم خصوصی", ignoreCase = true) -> {
+                    Triple(
+                        "img_tour_hair",
+                        "فاز ۵: سیستم برگردان مشتری، محافظت چهره FaceGuard (تار و شطرنجی کردن)، استوری‌ساز ۹:۱۶ اینستاگرام و شخصی‌سازی برند و آدرس سالن",
+                        VisualDisplayType.IMAGE
+                    )
+                }
+                text.contains("۹ میلیون", ignoreCase = true) || text.contains("۹میلیون", ignoreCase = true) || text.contains("اولین عروس", ignoreCase = true) || text.contains("بازاریابی", ignoreCase = true) || text.contains("تشکر", ignoreCase = true) -> {
+                    Triple(
+                        "img_tour_nail",
+                        "فاز ۶: اشتراک سالانه فقط ۹ میلیون تومان با جبران آنی در اولین عروس، درآمدزایی پورسانتی از بازاریابی همکاران و دعوت رسمی به همکاری",
+                        VisualDisplayType.IMAGE
                     )
                 }
                 else -> {
-                    // Tour rotation for introduction and general speech sections
+                    // Fallback to sequential stations
                     val cycle = listOf(
-                        Triple("img_tour_reception", "لابی ورودی و پذیرش مجلل با سنگ مرمر و نورپردازی گرم طلایی برای ثبت بهترین برداشت اولیه مراجعین", VisualDisplayType.IMAGE),
-                        Triple("img_tour_hair", "لاین تخصصی استایل مو و رنگ با طراحی مدرن و تجهیزات حرفه‌ای", VisualDisplayType.IMAGE),
-                        Triple("img_tour_bridal", "سوئیت تشریفات و گریم عروس VIP با فضای خصوصی و امکانات شاهانه", VisualDisplayType.IMAGE),
-                        Triple("img_tour_spa", "واحه آرامش و فیشیال تخصصی پوست با فضاسازی آرامش‌بخش", VisualDisplayType.IMAGE),
-                        Triple("img_tour_nail", "بار مدرن مانیکور و پدیکور با استند دیواری جذاب و پرانرژی", VisualDisplayType.IMAGE)
+                        Triple("tavana_icon", "فاز ۱: معرفی مهندس سیاوش علیمیری و شهر متاورسی توانا", VisualDisplayType.IMAGE),
+                        Triple("img_tour_reception", "فاز ۲: چالش سرگردانی و استعلام قیمت عروس‌ها", VisualDisplayType.IMAGE),
+                        Triple("img_tour_bridal", "فاز ۳: قلاب جذب سالن‌یار با کاتالوگ لباس عروس و داماد", VisualDisplayType.IMAGE),
+                        Triple("img_tour_spa", "فاز ۴: پرو جادویی مجازی، شینیون و امنیت ۱۰۰٪ آفلاین", VisualDisplayType.IMAGE),
+                        Triple("img_tour_hair", "فاز ۵: سیستم برگردان مشتری و استوری‌ساز اینستاگرام", VisualDisplayType.IMAGE),
+                        Triple("img_tour_nail", "فاز ۶: قیمت ۹ میلیون تومان و درآمدزایی از معرفی به همکاران", VisualDisplayType.IMAGE)
                     )
                     cycle[index % cycle.size]
                 }
@@ -252,15 +251,12 @@ object SpeechSegmentationEngine {
 
     private fun detectTopic(text: String): String {
         return when {
-            text.contains("سلام", ignoreCase = true) || text.contains("معرفی", ignoreCase = true) -> "مقدمه و معرفی سالنیار"
-            text.contains("چالش", ignoreCase = true) || text.contains("شلوغی", ignoreCase = true) -> "بررسی نیازها و چالش‌ها"
-            text.contains("ویترین", ignoreCase = true) -> "ویترین اختصاصی کسب‌وکار"
-            text.contains("رزرو", ignoreCase = true) || text.contains("نوبت", ignoreCase = true) -> "نوبت‌دهی آنلاین و پیامک"
-            text.contains("بازگرداندن", ignoreCase = true) || text.contains("مشتریان", ignoreCase = true) -> "باشگاه مشتریان و بازگشت"
-            text.contains("همکاری", ignoreCase = true) || text.contains("مزون", ignoreCase = true) -> "شبکه همکاری چندجانبه"
-            text.contains("کمیسیون", ignoreCase = true) || text.contains("پورسانت", ignoreCase = true) -> "مدل درآمد و سودآوری"
-            text.contains("محتوا", ignoreCase = true) || text.contains("تیزر", ignoreCase = true) -> "تولید محتوا و رسانه"
-            text.contains("آینده", ignoreCase = true) || text.contains("توسعه", ignoreCase = true) -> "چشم‌انداز و قابلیت‌های آتی"
+            text.contains("سیاوش", ignoreCase = true) || text.contains("متاورس", ignoreCase = true) || text.contains("توانا", ignoreCase = true) -> "فاز ۱: معرفی مهندس علیمیری و شهر متاورسی توانا"
+            text.contains("چالش", ignoreCase = true) || text.contains("قیمت", ignoreCase = true) || text.contains("سالن", ignoreCase = true) -> "فاز ۲: چالش استعلام قیمت و ریزش عروس‌ها"
+            text.contains("لباس عروس", ignoreCase = true) || text.contains("کت", ignoreCase = true) || text.contains("عکس", ignoreCase = true) -> "فاز ۳: قلاب سالن‌یار (۵۰ لباس عروس + ۳۵ کت‌شلوار)"
+            text.contains("پرو", ignoreCase = true) || text.contains("شینیون", ignoreCase = true) || text.contains("آفلاین", ignoreCase = true) -> "فاز ۴: پرو جادویی مجازی و امنیت آفلاین"
+            text.contains("برگردان", ignoreCase = true) || text.contains("استوری", ignoreCase = true) || text.contains("تار", ignoreCase = true) -> "فاز ۵: سیستم برگردان مشتری، محافظت چهره و استوری‌ساز"
+            text.contains("۹ میلیون", ignoreCase = true) || text.contains("۹میلیون", ignoreCase = true) || text.contains("اولین عروس", ignoreCase = true) || text.contains("بازاریابی", ignoreCase = true) -> "فاز ۶: قیمت ۹ میلیون تومان و درآمد بازاریابی"
             else -> "نکات کلیدی سخنرانی"
         }
     }

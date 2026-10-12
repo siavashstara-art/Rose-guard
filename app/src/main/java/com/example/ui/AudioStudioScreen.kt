@@ -187,6 +187,9 @@ fun AudioStudioScreen(
                         AudioPickerCard(
                             onSelectAudio = {
                                 audioPickerLauncher.launch("audio/*")
+                            },
+                            onLoadDemoAudio = {
+                                viewModel.loadDemoSpeechAudioTrack(autoPlay = false)
                             }
                         )
                     } else {
@@ -573,7 +576,8 @@ private fun StudioBrandingHeader() {
 
 @Composable
 private fun AudioPickerCard(
-    onSelectAudio: () -> Unit
+    onSelectAudio: () -> Unit,
+    onLoadDemoAudio: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -618,7 +622,7 @@ private fun AudioPickerCard(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "فایل صوتی سخنرانی خود را از حافظه دستگاه انتخاب کنید تا مدت زمان، کیفیت و پخش آن ارزیابی شود.",
+                text = "فایل صوتی سخنرانی خود را از حافظه دستگاه انتخاب کنید تا مدت زمان، کیفیت و پخش آن ارزیابی شود، یا نمونه صوتی دمو را بارگذاری فرمایید.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
                 textAlign = TextAlign.Center,
@@ -648,9 +652,30 @@ private fun AudioPickerCard(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "انتخاب فایل صوتی از دستگاه",
+                    text = "انتخاب فایل صدای شخصی از گوشی",
                     style = MaterialTheme.typography.labelLarge,
                     fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            OutlinedButton(
+                onClick = onLoadDemoAudio,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .testTag("load_demo_audio_btn"),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.2.dp, PeachPrimary.copy(alpha = 0.5f)),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = PeachPrimary)
+            ) {
+                Icon(imageVector = Icons.Default.Audiotrack, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "بارگذاری نمونه صوتی دمو (سخنرانی ۳۶)",
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold
                 )
             }

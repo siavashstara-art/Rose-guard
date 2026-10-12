@@ -287,5 +287,41 @@ class ExampleUnitTest {
         assertEquals(0.30f, voiceSettings.vocalWarmth, 0.01f)
         assertTrue(voiceSettings.autoDucking)
     }
+
+    @Test
+    fun testSalonTourImageResolverResolvesDirectDrawables() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val receptionModel = com.example.model.SalonTourImageResolver.resolveImageModel(context, "img_tour_reception")
+        assertEquals(R.drawable.img_tour_reception, receptionModel)
+
+        val bridalModel = com.example.model.SalonTourImageResolver.resolveImageModel(context, "img_tour_bridal")
+        assertEquals(R.drawable.img_tour_bridal, bridalModel)
+
+        val hairModel = com.example.model.SalonTourImageResolver.resolveImageModel(context, "img_tour_hair")
+        assertEquals(R.drawable.img_tour_hair, hairModel)
+
+        val spaModel = com.example.model.SalonTourImageResolver.resolveImageModel(context, "img_tour_spa")
+        assertEquals(R.drawable.img_tour_spa, spaModel)
+
+        val nailModel = com.example.model.SalonTourImageResolver.resolveImageModel(context, "img_tour_nail")
+        assertEquals(R.drawable.img_tour_nail, nailModel)
+
+        val nullModel = com.example.model.SalonTourImageResolver.resolveImageModel(context, null)
+        assertNull(nullModel)
+
+        val blankModel = com.example.model.SalonTourImageResolver.resolveImageModel(context, "   ")
+        assertNull(blankModel)
+    }
+
+    @Test
+    fun testDemoSpeechAudioEngineWavGeneration() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        kotlinx.coroutines.runBlocking {
+            val file = com.example.service.DemoSpeechAudioEngine.getOrCreateDemoSpeechTrack(context)
+            assertTrue(file.exists())
+            assertTrue(file.length() > 500000L)
+        }
+    }
 }
 

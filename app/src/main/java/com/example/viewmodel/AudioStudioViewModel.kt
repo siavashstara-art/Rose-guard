@@ -33,6 +33,7 @@ import com.example.model.VideoScene
 import com.example.model.VisitorAccount
 import com.example.model.VisualDisplayType
 import com.example.model.VoiceAcousticSettings
+import com.example.service.DemoSpeechAudioEngine
 import com.example.service.GeminiSpeechService
 import com.example.service.LicenseValidationResult
 import com.example.service.LicenseValidationService
@@ -189,8 +190,10 @@ class AudioStudioViewModel(application: Application) : AndroidViewModel(applicat
     private var progressPollingJob: Job? = null
 
     init {
-        // Pre-populate speech segments, scenes, and offers
-        processManualTranscript(SpeechSegmentationEngine.SAMPLE_SALONYAR_SPEECH)
+        // Pre-populate speech segments, scenes, and offers with Siavash Alimiri 6-phase strategic speech (90 seconds)
+        _rawTranscriptText.value = SalonTourCatalog.SPEECH_36_FULL_TEXT
+        processManualTranscript(SalonTourCatalog.SPEECH_36_FULL_TEXT, 90.0)
+        _selectedTourStationId.value = "tour_phase1_persona"
 
         // Load saved salon profiles
         val profiles = salonRepo.getAllProfiles()
@@ -206,6 +209,16 @@ class AudioStudioViewModel(application: Application) : AndroidViewModel(applicat
         _visitorAccounts.value = managementRepo.getVisitorAccounts()
         _partnerships.value = managementRepo.getCommercialPartnerships()
         _walletTransactions.value = managementRepo.getWalletTransactions()
+
+        // Pre-configure speech 36 presets (Acoustic room reverb & soothing music)
+        setVoiceAcousticEnabled(true)
+        setRoomSizePreset(RoomSizePreset.ENGAGING_ROOM)
+        setEchoLevel(0.20f)
+        setRoomSizeAmount(0.35f)
+        setVocalWarmth(0.30f)
+
+        // Automatically initialize demonstration speech audio track + background music
+        loadDemoSpeechAudioTrack(autoPlay = false)
     }
 
     // Audio Playback Engine
@@ -326,6 +339,11 @@ class AudioStudioViewModel(application: Application) : AndroidViewModel(applicat
 
     // Playback Controls with Background Music Synchronization
     fun play() {
+        if (mediaPlayer == null) {
+            // If user taps play before choosing their own recording, immediately load & play demo speech
+            loadDemoSpeechAudioTrack(autoPlay = true)
+            return
+        }
         val player = mediaPlayer ?: return
         try {
             if (!player.isPlaying) {
@@ -703,7 +721,7 @@ class AudioStudioViewModel(application: Application) : AndroidViewModel(applicat
 
     fun loadSpeech36WithTourPreset() {
         _rawTranscriptText.value = SalonTourCatalog.SPEECH_36_FULL_TEXT
-        processManualTranscript(SalonTourCatalog.SPEECH_36_FULL_TEXT)
+        processManualTranscript(SalonTourCatalog.SPEECH_36_FULL_TEXT, 90.0)
         applyFullVisualTourToAllScenes()
         selectCuratedMusicTrack(CuratedMusicCatalog.TRACKS.first())
         setVoiceAcousticEnabled(true)
@@ -711,6 +729,86 @@ class AudioStudioViewModel(application: Application) : AndroidViewModel(applicat
         setEchoLevel(0.20f)
         setRoomSizeAmount(0.35f)
         setVocalWarmth(0.30f)
+        loadDemoSpeechAudioTrack(autoPlay = false)
+    }
+
+    /**
+     * Loads the onboard synthesized demonstration speech narration track (90s).
+     * Populates player, timeline, subtitles, and acoustic DSP so everything works immediately out of the box.
+     */
+    fun loadDemoSpeechAudioTrack(autoPlay: Boolean = false) {
+        val context = getApplication<Application>().applicationContext
+        viewModelScope.launch {
+            try {
+                val demoFile = DemoSpeechAudioEngine.getOrCreateDemoSpeechTrack(context)
+                val demoDurationMs = 90000L
+
+                releaseMediaPlayer()
+
+                val newPlayer = MediaPlayer().apply {
+                    setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .build()
+                    )
+                    setDataSource(demoFile.absolutePath)
+                    prepare()
+                }
+
+                val vol = _speechVolume.value
+                newPlayer.setVolume(vol, vol)
+
+                newPlayer.setOnCompletionListener {
+                    _playbackState.update { state ->
+                        state.copy(
+                            isPlaying = false,
+                            currentPositionMs = demoDurationMs
+                        )
+                    }
+                    bgMusicPlayer?.pause()
+                    stopProgressPolling()
+                }
+
+                mediaPlayer = newPlayer
+
+                val demoInfo = AudioFileInfo(
+                    uri = Uri.fromFile(demoFile),
+                    fileName = "نطق استراتژیک مهندس سیاوش علیمیری (۵ فاز جذب و فروش سالن‌یار)",
+                    mimeType = "audio/wav",
+                    durationMs = demoDurationMs,
+                    fileSizeBytes = demoFile.length(),
+                    formatDescription = "WAV استودیویی"
+                )
+                _audioFileInfo.value = demoInfo
+
+                _playbackState.value = AudioPlaybackUiState(
+                    isPlaying = false,
+                    currentPositionMs = 0L,
+                    totalDurationMs = demoDurationMs,
+                    isLoaded = true
+                )
+
+                // Attach Voice DSP (reverb, room size, echo, bass boost)
+                try {
+                    voiceAcousticDsp.attachToSession(newPlayer.audioSessionId, _voiceAcousticSettings.value)
+                } catch (_: Exception) {}
+
+                // Initialize background music track (ambient piano)
+                initOrSwitchBackgroundMusic(
+                    trackId = _selectedCuratedTrackId.value,
+                    title = "پیانو ملایم امبینت و آرامش‌بخش سالنیار",
+                    artistOrSource = "Royalty-Free Creative Commons Zero (CC0)",
+                    volume = _backgroundMusicTrack.value.volume
+                )
+
+                if (autoPlay) {
+                    play()
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "امکان بارگذاری نمونه صوتی دمو وجود ندارد: ${e.localizedMessage}"
+            }
+        }
     }
 
     // Step 4: Subtitle Styling & Customization

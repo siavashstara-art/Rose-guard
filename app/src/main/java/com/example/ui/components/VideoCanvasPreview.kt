@@ -242,13 +242,7 @@ fun VideoCanvasPreview(
             ) {
                 val context = LocalContext.current
                 val imageModel = remember(activeScene?.assetUri) {
-                    val uriStr = activeScene?.assetUri
-                    if (uriStr.isNullOrBlank()) null
-                    else {
-                        val clean = uriStr.substringAfterLast("/").substringBeforeLast(".")
-                        val resId = context.resources.getIdentifier(clean, "drawable", context.packageName)
-                        if (resId != 0) resId else uriStr
-                    }
+                    com.example.model.SalonTourImageResolver.resolveImageModel(context, activeScene?.assetUri)
                 }
 
                 // Scene Visual Layer (Image or Stylized Placeholder)

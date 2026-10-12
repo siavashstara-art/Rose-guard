@@ -320,6 +320,14 @@ private fun SalonShowcaseCard(
     onPickMainPhoto: () -> Unit,
     onPickBannerPhoto: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val bannerModel = remember(profile.bannerPhotoUri) {
+        com.example.model.SalonTourImageResolver.resolveImageModel(
+            context,
+            profile.bannerPhotoUri ?: "img_tour_reception"
+        )
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -344,9 +352,9 @@ private fun SalonShowcaseCard(
                         .clickable { onPickBannerPhoto() },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (profile.bannerPhotoUri != null) {
+                    if (bannerModel != null) {
                         AsyncImage(
-                            model = profile.bannerPhotoUri,
+                            model = bannerModel,
                             contentDescription = "عکس هدر سالن",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
