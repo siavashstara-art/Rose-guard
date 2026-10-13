@@ -1,6 +1,6 @@
 {
-  "name": "TAVANA Studio",
-  "description": "استودیوی هوشمند تبدیل صوت و سخنرانی فارسی به ویدیو",
+  "name": "سالن‌یار",
+  "description": "سامانه هوشمند استایل‌شناسی، جذب عروس، پرو مجازی و استوریساز سالن‌های زیبایی",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
