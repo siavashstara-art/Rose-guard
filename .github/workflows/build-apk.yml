@@ -1,0 +1,61 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Export APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare Signing Keystore
+        run: |
+          # Remove existing keystore if present to prevent "alias <upload> already exists"
+          rm -f my-upload-key.jks
+          echo "Generating clean CI upload keystore for APK..."
+          keytool -genkeypair -v \
+            -keystore my-upload-key.jks \
+            -alias upload \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass "android" \
+            -keypass "android" \
+            -dname "CN=AI Studio Build, O=Google, C=US"
+        env:
+          KEYSTORE_SECRET: ${{ secrets.KEYSTORE_SECRET }}
+
+      - name: Build Debug & Release APK
+        run: gradle assembleDebug assembleRelease
+        env:
+          STORE_PASSWORD: "android"
+          KEY_PASSWORD: "android"
+          KEYSTORE_PATH: "my-upload-key.jks"
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
