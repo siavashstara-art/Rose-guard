@@ -1,5 +1,13 @@
 package com.example.ui.components
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,29 +26,32 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.SpatialAudio
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.AiVoicePersona
@@ -54,8 +65,31 @@ fun VoiceoverStudioSection(
     onSelectPersona: (AiVoicePersona) -> Unit,
     onToggleEcho: () -> Unit,
     onToggleMusic: () -> Unit,
+    onSelectCustomAudio: (Uri, String) -> Unit,
+    onVolumeChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val audioPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val fileName = uri.lastPathSegment ?: "فایل صوتی انتخابی"
+            onSelectCustomAudio(uri, fileName)
+        }
+    }
+
+    // Audio visualizer bars pulse animation
+    val infiniteTransition = rememberInfiniteTransition(label = "audio_anim")
+    val pulseHeight by infiniteTransition.animateFloat(
+        initialValue = 8f,
+        targetValue = 28f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(350),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse_height"
+    )
+
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -119,23 +153,38 @@ fun VoiceoverStudioSection(
                 modifier = Modifier.padding(18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Status line
+                // Status line & Visualizer
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.GraphicEq,
-                            contentDescription = null,
-                            tint = if (playState.isPlaying) Color(0xFF4ADE80) else Color.Gray
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        if (playState.isPlaying) {
+                            // Animated Equalizer Bars
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                verticalAlignment = Alignment.Bottom,
+                                modifier = Modifier.height(28.dp)
+                            ) {
+                                Box(modifier = Modifier.width(4.dp).height(pulseHeight.dp).background(Color(0xFFD4AF37), RoundedCornerShape(2.dp)))
+                                Box(modifier = Modifier.width(4.dp).height((36f - pulseHeight).dp).background(Color(0xFF4ADE80), RoundedCornerShape(2.dp)))
+                                Box(modifier = Modifier.width(4.dp).height((pulseHeight * 0.8f).dp).background(Color(0xFFC084FC), RoundedCornerShape(2.dp)))
+                                Box(modifier = Modifier.width(4.dp).height((24f - pulseHeight * 0.5f).dp).background(Color(0xFFF59E0B), RoundedCornerShape(2.dp)))
+                            }
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.GraphicEq,
+                                contentDescription = null,
+                                tint = Color.Gray
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = playState.statusMessage,
-                            color = Color(0xFFE9D5FF),
-                            fontSize = 12.sp
+                            color = if (playState.isPlaying) Color(0xFF4ADE80) else Color(0xFFE9D5FF),
+                            fontSize = 12.sp,
+                            fontWeight = if (playState.isPlaying) FontWeight.Bold else FontWeight.Normal
                         )
                     }
 
@@ -155,7 +204,7 @@ fun VoiceoverStudioSection(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Play / Pause Button
+                // Play / Pause Speech Button
                 Button(
                     onClick = onTogglePlay,
                     colors = ButtonDefaults.buttonColors(
@@ -174,14 +223,69 @@ fun VoiceoverStudioSection(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (playState.isPlaying) "توقف پخش سخنرانی" else "پخش سخنرانی با صدای هوش مصنوعی انتخابی",
+                        text = if (playState.isPlaying) "توقف پخش سخنرانی زنده" else "پخش سخنرانی با صدای هوش مصنوعی",
                         color = if (playState.isPlaying) Color.White else Color(0xFF1B0B26),
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
                     )
                 }
 
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Audio File Picker Button
+                Button(
+                    onClick = { audioPicker.launch("audio/*") },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF361852)),
+                    border = BorderStroke(1.dp, Color(0xFF8B5CF6)),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("pick_custom_voice_button")
+                ) {
+                    Icon(Icons.Default.AudioFile, contentDescription = null, tint = Color(0xFFE9D5FF))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (playState.customAudioFileName != null)
+                            "فایل بارگذاری شده: ${playState.customAudioFileName}"
+                        else
+                            "📁 انتخاب و پخش فایل صوتی ضبط‌شده شما (MP3/WAV)",
+                        color = Color(0xFFEDE9FE),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(14.dp))
+
+                // Volume Slider Control
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.VolumeUp, contentDescription = null, tint = Color(0xFFECC34C))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("بلندی صدا:", color = Color.White, fontSize = 11.sp, modifier = Modifier.width(65.dp))
+                    Slider(
+                        value = playState.volumeLevel,
+                        onValueChange = onVolumeChange,
+                        valueRange = 0.1f..1.0f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = Color(0xFFD4AF37),
+                            activeTrackColor = Color(0xFFD4AF37),
+                            inactiveTrackColor = Color(0xFF442460)
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "${(playState.volumeLevel * 100).toInt()}٪",
+                        color = Color(0xFFECC34C),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.width(36.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Audio FX Switches
                 Row(
@@ -265,7 +369,7 @@ fun VoiceoverStudioSection(
                     ) {
                         Box(
                             modifier = Modifier
-                                .background(if (isSelected) Color(0xFFD4AF37) else Color(0xFF2C1A42), CircleShape)
+                                .background(if (isSelected) Color(0xFFD4AF37) else Color(0xFF2E1B44), CircleShape)
                                 .padding(8.dp)
                         ) {
                             Icon(

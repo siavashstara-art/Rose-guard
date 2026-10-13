@@ -215,7 +215,9 @@ fun SalonYarMainScreen(
                             onTogglePlay = { viewModel.toggleSpeechPlayback() },
                             onSelectPersona = { viewModel.selectAiPersona(it) },
                             onToggleEcho = { viewModel.toggleEcho() },
-                            onToggleMusic = { viewModel.toggleMusic() }
+                            onToggleMusic = { viewModel.toggleMusic() },
+                            onSelectCustomAudio = { uri, name -> viewModel.playCustomAudio(uri, name) },
+                            onVolumeChange = { viewModel.setAudioVolume(it) }
                         )
                     }
                     1 -> {

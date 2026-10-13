@@ -266,6 +266,14 @@ class SalonYarViewModel(application: Application) : AndroidViewModel(application
         aiVoiceService.toggleBackgroundMusic()
     }
 
+    fun playCustomAudio(uri: android.net.Uri, displayName: String) {
+        aiVoiceService.playCustomAudioUri(uri, displayName)
+    }
+
+    fun setAudioVolume(vol: Float) {
+        aiVoiceService.setVolume(vol)
+    }
+
     // --- Story Maker Actions ---
     fun setStoryTemplate(template: StoryTemplate) {
         _storyDraft.value = _storyDraft.value.copy(

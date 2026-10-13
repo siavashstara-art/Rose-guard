@@ -1,9 +1,8 @@
 package com.example.service
 
 import android.content.Context
-import android.media.AudioAttributes
-import android.media.AudioFormat
-import android.media.AudioTrack
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
@@ -12,13 +11,11 @@ import com.example.model.AiVoicePersona
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.Locale
-import kotlin.math.sin
 
 data class AiVoicePlayState(
     val isPlaying: Boolean = false,
@@ -29,15 +26,20 @@ data class AiVoicePlayState(
     val currentSpeakingSnippet: String = "",
     val isEchoReverbEnabled: Boolean = true,
     val isBackgroundMusicEnabled: Boolean = true,
-    val statusMessage: String = "آماده پخش صدای هوش مصنوعی"
+    val statusMessage: String = "آماده پخش سخنرانی مهندس سیاوش علی‌میری",
+    val customAudioFileName: String? = null,
+    val volumeLevel: Float = 0.95f
 )
 
 class AiVoiceNarrationService(private val context: Context) : TextToSpeech.OnInitListener {
 
     private var tts: TextToSpeech? = null
     private var isTtsInitialized = false
-    private var simulationJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.Main)
+    private var streamingJob: Job? = null
+
+    private val continuousEngine = ContinuousVoiceAudioEngine()
+    private var mediaPlayer: MediaPlayer? = null
 
     private val _state = MutableStateFlow(AiVoicePlayState())
     val state: StateFlow<AiVoicePlayState> = _state.asStateFlow()
@@ -46,7 +48,7 @@ class AiVoiceNarrationService(private val context: Context) : TextToSpeech.OnIni
         try {
             tts = TextToSpeech(context.applicationContext, this)
         } catch (e: Exception) {
-            Log.e("AiVoiceService", "Failed to create TextToSpeech: ${e.message}")
+            Log.e("AiVoiceService", "Failed to init TextToSpeech: ${e.message}")
         }
     }
 
@@ -59,25 +61,22 @@ class AiVoiceNarrationService(private val context: Context) : TextToSpeech.OnIni
                 }
 
                 override fun onDone(utteranceId: String?) {
-                    _state.value = _state.value.copy(
-                        isPlaying = false,
-                        statusMessage = "پایان سخنرانی هوش مصنوعی"
-                    )
+                    // done
                 }
 
                 @Deprecated("Deprecated in Java")
                 override fun onError(utteranceId: String?) {
-                    _state.value = _state.value.copy(isPlaying = false)
+                    // error
                 }
             })
-            _state.value = _state.value.copy(isTtsReady = true, statusMessage = "موتور صوتی آماده است")
+            _state.value = _state.value.copy(isTtsReady = true)
         }
     }
 
     fun setPersona(persona: AiVoicePersona) {
         _state.value = _state.value.copy(
             activePersona = persona,
-            statusMessage = "صدای «${persona.titlePersian}» فعال شد"
+            statusMessage = "صدای «${persona.titlePersian}» انتخاب شد"
         )
     }
 
@@ -85,7 +84,7 @@ class AiVoiceNarrationService(private val context: Context) : TextToSpeech.OnIni
         val next = !_state.value.isEchoReverbEnabled
         _state.value = _state.value.copy(
             isEchoReverbEnabled = next,
-            statusMessage = if (next) "افکت اکو و ریورب فعال شد" else "اکو و ریورب خاموش شد"
+            statusMessage = if (next) "افکت اکو و ریورب طنین‌انداز فعال شد" else "اکو و ریورب خاموش شد"
         )
     }
 
@@ -93,8 +92,43 @@ class AiVoiceNarrationService(private val context: Context) : TextToSpeech.OnIni
         val next = !_state.value.isBackgroundMusicEnabled
         _state.value = _state.value.copy(
             isBackgroundMusicEnabled = next,
-            statusMessage = if (next) "موسیقی ملایم پس‌زمینه فعال شد" else "موسیقی پس‌زمینه خاموش شد"
+            statusMessage = if (next) "موسیقی ملایم و شیک پس‌زمینه فعال شد" else "موسیقی پس‌زمینه خاموش شد"
         )
+    }
+
+    fun setVolume(volume: Float) {
+        val vol = volume.coerceIn(0.1f, 1.0f)
+        _state.value = _state.value.copy(volumeLevel = vol)
+        mediaPlayer?.setVolume(vol, vol)
+    }
+
+    fun playCustomAudioUri(uri: Uri, displayName: String) {
+        stop()
+        try {
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(context, uri)
+                setVolume(_state.value.volumeLevel, _state.value.volumeLevel)
+                setOnPreparedListener { mp ->
+                    mp.start()
+                    _state.value = _state.value.copy(
+                        isPlaying = true,
+                        customAudioFileName = displayName,
+                        statusMessage = "در حال پخش فایل صوتی اختصاصی شما: $displayName"
+                    )
+                }
+                setOnCompletionListener {
+                    _state.value = _state.value.copy(
+                        isPlaying = false,
+                        statusMessage = "پایان پخش فایل صوتی اختصاصی"
+                    )
+                }
+                prepareAsync()
+            }
+        } catch (e: Exception) {
+            _state.value = _state.value.copy(
+                statusMessage = "خطا در پخش فایل صوتی: ${e.message}"
+            )
+        }
     }
 
     fun speakScript(text: String) {
@@ -111,115 +145,73 @@ class AiVoiceNarrationService(private val context: Context) : TextToSpeech.OnIni
             isPlaying = true,
             totalParagraphs = count,
             currentParagraphIndex = 0,
-            statusMessage = "در حال پخش با ${persona.titlePersian}..."
+            statusMessage = "در حال پخش سخنرانی با ${persona.titlePersian}..."
         )
 
-        // Try native TTS
-        var farsiTtsWorked = false
+        // If native TTS is ready, attempt speaking in parallel with fallbacks
         if (isTtsInitialized && tts != null) {
-            val farsiLocale = Locale("fa", "IR")
-            val langResult = tts?.setLanguage(farsiLocale)
-            if (langResult != TextToSpeech.LANG_MISSING_DATA && langResult != TextToSpeech.LANG_NOT_SUPPORTED) {
-                tts?.setPitch(persona.pitchMultiplier)
-                tts?.setSpeechRate(persona.speechRateMultiplier)
-                val params = Bundle()
-                params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "salonyar_speech")
-                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "salonyar_speech")
-                farsiTtsWorked = true
+            try {
+                val farsiLocale = Locale("fa", "IR")
+                val langAvailable = tts?.isLanguageAvailable(farsiLocale)
+                if (langAvailable != TextToSpeech.LANG_NOT_SUPPORTED && langAvailable != TextToSpeech.LANG_MISSING_DATA) {
+                    tts?.language = farsiLocale
+                    tts?.setPitch(persona.pitchMultiplier)
+                    tts?.setSpeechRate(persona.speechRateMultiplier)
+                    val params = Bundle()
+                    params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "salonyar_speech")
+                    tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "salonyar_speech")
+                }
+            } catch (e: Exception) {
+                Log.w("AiVoiceService", "Native TTS call skipped: ${e.message}")
             }
         }
 
-        // Coroutine simulation runner to synchronize visual highlights and audio cues
-        simulationJob?.cancel()
-        simulationJob = scope.launch {
-            try {
-                // Play harmonic audio cue if device doesn't have Persian TTS data
-                if (!farsiTtsWorked) {
-                    playAcousticChime(persona.pitchMultiplier)
-                }
-
-                for (idx in paragraphs.indices) {
-                    val p = paragraphs[idx]
+        // Start continuous acoustic audio synthesizer with formants, cadence, echo and ambient music
+        streamingJob?.cancel()
+        streamingJob = scope.launch {
+            continuousEngine.streamSpeechAudio(
+                text = text,
+                persona = persona,
+                enableEcho = _state.value.isEchoReverbEnabled,
+                enableMusic = _state.value.isBackgroundMusicEnabled,
+                onParagraphChanged = { idx, snippet ->
                     _state.value = _state.value.copy(
                         currentParagraphIndex = idx,
-                        currentSpeakingSnippet = p.take(80) + if (p.length > 80) "..." else "",
+                        currentSpeakingSnippet = snippet,
                         statusMessage = "پخش بخش ${idx + 1} از $count (${persona.characterVibe})"
                     )
-                    // Simulated duration per paragraph
-                    val dur = (p.length * 55L).coerceIn(2500L, 7500L)
-                    delay(dur)
-                }
-
-                _state.value = _state.value.copy(
-                    isPlaying = false,
-                    currentParagraphIndex = count - 1,
-                    statusMessage = "پایان سخنرانی مهندس سیاوش علی‌میری"
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(isPlaying = false)
-            }
-        }
-    }
-
-    private fun playAcousticChime(pitchFactor: Float) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val sampleRate = 44100
-                val durationSec = 0.6
-                val numSamples = (durationSec * sampleRate).toInt()
-                val buffer = ShortArray(numSamples)
-                val baseFreq = 440.0 * pitchFactor
-
-                for (i in 0 until numSamples) {
-                    val time = i.toDouble() / sampleRate
-                    // Warm harmonic chime with decay
-                    val envelope = Math.exp(-time * 4.0)
-                    val s = (sin(2.0 * Math.PI * baseFreq * time) * 0.6 +
-                            sin(2.0 * Math.PI * (baseFreq * 1.5) * time) * 0.3 +
-                            sin(2.0 * Math.PI * (baseFreq * 2.0) * time) * 0.1) * envelope
-                    buffer[i] = (s * Short.MAX_VALUE * 0.4).toInt().toShort()
-                }
-
-                val audioTrack = AudioTrack.Builder()
-                    .setAudioAttributes(
-                        AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .build()
+                },
+                onCompleted = {
+                    _state.value = _state.value.copy(
+                        isPlaying = false,
+                        currentParagraphIndex = count - 1,
+                        statusMessage = "پایان سخنرانی مهندس سیاوش علی‌میری"
                     )
-                    .setAudioFormat(
-                        AudioFormat.Builder()
-                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .setSampleRate(sampleRate)
-                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                            .build()
-                    )
-                    .setBufferSizeInBytes(buffer.size * 2)
-                    .setTransferMode(AudioTrack.MODE_STATIC)
-                    .build()
-
-                audioTrack.write(buffer, 0, buffer.size)
-                audioTrack.play()
-                delay(700)
-                audioTrack.release()
-            } catch (e: Exception) {
-                Log.w("AiVoiceService", "Chime generation failed: ${e.message}")
-            }
+                }
+            )
         }
     }
 
     fun stop() {
         tts?.stop()
-        simulationJob?.cancel()
+        streamingJob?.cancel()
+        continuousEngine.stopAudio()
+        try {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+        } catch (e: Exception) {
+            // ignore
+        } finally {
+            mediaPlayer = null
+        }
         _state.value = _state.value.copy(
             isPlaying = false,
-            statusMessage = "پخش متوقف شد"
+            statusMessage = "پخش سخنرانی متوقف شد"
         )
     }
 
     fun release() {
-        tts?.stop()
+        stop()
         tts?.shutdown()
-        simulationJob?.cancel()
     }
 }
