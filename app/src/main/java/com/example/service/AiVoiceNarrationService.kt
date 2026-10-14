@@ -39,7 +39,7 @@ class AiVoiceNarrationService(private val context: Context) : TextToSpeech.OnIni
     private var streamingJob: Job? = null
 
     private val continuousEngine = ContinuousVoiceAudioEngine()
-    private var mediaPlayer: MediaPlayer? = null
+    private var customAudioPlayer: MediaPlayer? = null
 
     private val _state = MutableStateFlow(AiVoicePlayState())
     val state: StateFlow<AiVoicePlayState> = _state.asStateFlow()
@@ -99,13 +99,31 @@ class AiVoiceNarrationService(private val context: Context) : TextToSpeech.OnIni
     fun setVolume(volume: Float) {
         val vol = volume.coerceIn(0.1f, 1.0f)
         _state.value = _state.value.copy(volumeLevel = vol)
-        mediaPlayer?.setVolume(vol, vol)
+        customAudioPlayer?.setVolume(vol, vol)
+        continuousEngine.setVolume(vol)
+    }
+
+    /**
+     * Instantly plays a royal luxury chime test to verify speaker/headphones output.
+     */
+    fun playTestChime() {
+        stop()
+        _state.value = _state.value.copy(
+            isPlaying = true,
+            statusMessage = "در حال پخش زنگ و تست صدای زنده بلندگو..."
+        )
+        continuousEngine.playTestChime(context, _state.value.volumeLevel) {
+            _state.value = _state.value.copy(
+                isPlaying = false,
+                statusMessage = "تست صدا با موفقیت و وضوح کامل پخش شد"
+            )
+        }
     }
 
     fun playCustomAudioUri(uri: Uri, displayName: String) {
         stop()
         try {
-            mediaPlayer = MediaPlayer().apply {
+            customAudioPlayer = MediaPlayer().apply {
                 setDataSource(context, uri)
                 setVolume(_state.value.volumeLevel, _state.value.volumeLevel)
                 setOnPreparedListener { mp ->
@@ -113,7 +131,7 @@ class AiVoiceNarrationService(private val context: Context) : TextToSpeech.OnIni
                     _state.value = _state.value.copy(
                         isPlaying = true,
                         customAudioFileName = displayName,
-                        statusMessage = "در حال پخش فایل صوتی اختصاصی شما: $displayName"
+                        statusMessage = "در حال پخش فایل صوتی اختصاصی: $displayName"
                     )
                 }
                 setOnCompletionListener {
@@ -145,35 +163,43 @@ class AiVoiceNarrationService(private val context: Context) : TextToSpeech.OnIni
             isPlaying = true,
             totalParagraphs = count,
             currentParagraphIndex = 0,
-            statusMessage = "در حال پخش سخنرانی با ${persona.titlePersian}..."
+            statusMessage = "در حال پخش سخنرانی با صدای «${persona.titlePersian}»..."
         )
 
-        // If native TTS is ready, attempt speaking in parallel with fallbacks
+        // Attempt Android system TTS in parallel with best matching language
         if (isTtsInitialized && tts != null) {
             try {
                 val farsiLocale = Locale("fa", "IR")
-                val langAvailable = tts?.isLanguageAvailable(farsiLocale)
-                if (langAvailable != TextToSpeech.LANG_NOT_SUPPORTED && langAvailable != TextToSpeech.LANG_MISSING_DATA) {
+                val isFa = tts?.isLanguageAvailable(farsiLocale)
+                if (isFa != TextToSpeech.LANG_NOT_SUPPORTED && isFa != TextToSpeech.LANG_MISSING_DATA) {
                     tts?.language = farsiLocale
-                    tts?.setPitch(persona.pitchMultiplier)
-                    tts?.setSpeechRate(persona.speechRateMultiplier)
-                    val params = Bundle()
-                    params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "salonyar_speech")
-                    tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "salonyar_speech")
+                } else {
+                    // Try Arabic or system default fallback for phonetic speech
+                    val arLocale = Locale("ar")
+                    if (tts?.isLanguageAvailable(arLocale) != TextToSpeech.LANG_NOT_SUPPORTED) {
+                        tts?.language = arLocale
+                    }
                 }
+                tts?.setPitch(persona.pitchMultiplier)
+                tts?.setSpeechRate(persona.speechRateMultiplier)
+                val params = Bundle()
+                params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "salonyar_speech")
+                tts?.speak(text.take(400), TextToSpeech.QUEUE_FLUSH, params, "salonyar_speech")
             } catch (e: Exception) {
                 Log.w("AiVoiceService", "Native TTS call skipped: ${e.message}")
             }
         }
 
-        // Start continuous acoustic audio synthesizer with formants, cadence, echo and ambient music
+        // Start guaranteed high-fidelity synthesized WAV playback via MediaPlayer
         streamingJob?.cancel()
         streamingJob = scope.launch {
             continuousEngine.streamSpeechAudio(
+                context = context,
                 text = text,
                 persona = persona,
                 enableEcho = _state.value.isEchoReverbEnabled,
                 enableMusic = _state.value.isBackgroundMusicEnabled,
+                volumeLevel = _state.value.volumeLevel,
                 onParagraphChanged = { idx, snippet ->
                     _state.value = _state.value.copy(
                         currentParagraphIndex = idx,
@@ -197,12 +223,12 @@ class AiVoiceNarrationService(private val context: Context) : TextToSpeech.OnIni
         streamingJob?.cancel()
         continuousEngine.stopAudio()
         try {
-            mediaPlayer?.stop()
-            mediaPlayer?.release()
+            customAudioPlayer?.stop()
+            customAudioPlayer?.release()
         } catch (e: Exception) {
             // ignore
         } finally {
-            mediaPlayer = null
+            customAudioPlayer = null
         }
         _state.value = _state.value.copy(
             isPlaying = false,

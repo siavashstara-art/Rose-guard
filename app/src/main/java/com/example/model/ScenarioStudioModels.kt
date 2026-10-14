@@ -38,7 +38,14 @@ data class BridalGownModel(
     val namePersian: String,
     val styleCategory: String,
     val fabricType: String,
-    val trendYear: String = "۲۰۲۶"
+    val trendYear: String = "۲۰۲۶",
+    val maisonName: String = "مزون تخصصی لباس عروس پرنسس رویال (الهیه)",
+    val maisonAddress: String = "تهران، الهیه، خیابان فرشته، برج پالادیوم، پلاک ۴",
+    val maisonPhone: String = "02122001122",
+    val maisonInstagram: String = "@royal_princess_maison",
+    val slotRentalFeeToman: Long = 5_000_000L,
+    val rentalPriceToman: Long = 18_000_000L,
+    val referralDiscountPercent: Int = 15
 )
 
 data class GroomSuitModel(
@@ -46,7 +53,14 @@ data class GroomSuitModel(
     val namePersian: String,
     val cutStyle: String,
     val colorTone: String,
-    val trendYear: String = "۲۰۲۶"
+    val trendYear: String = "۲۰۲۶",
+    val maisonName: String = "شو‌روم تخصصی کت‌شلوار داماد الگانس (زعفرانیه)",
+    val maisonAddress: String = "تهران، زعفرانیه، مرکز خرید پالاس، طبقه ۲",
+    val maisonPhone: String = "02122003344",
+    val maisonInstagram: String = "@elegance_groom_suits",
+    val slotRentalFeeToman: Long = 4_000_000L,
+    val rentalPriceToman: Long = 12_000_000L,
+    val referralDiscountPercent: Int = 12
 )
 
 object WardrobeCatalog {

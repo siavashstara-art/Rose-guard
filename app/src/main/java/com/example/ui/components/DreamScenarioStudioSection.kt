@@ -115,6 +115,11 @@ fun DreamScenarioStudioSection(
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Practical Step-by-Step Visual Try-On Guide
+        VirtualTryonPracticalGuideCard()
+
         Spacer(modifier = Modifier.height(18.dp))
 
         // 3 Dream Scenarios Selector (Core Feature 5)

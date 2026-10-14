@@ -19,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CheckCircle
@@ -121,9 +122,58 @@ fun VisitorLicensePanelSection(
             }
         }
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // License Status Banner
+        var activePanelMode by remember { mutableStateOf(0) }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFF1E0E2C))
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (activePanelMode == 0) Color(0xFFD4AF37) else Color.Transparent)
+                    .clickable { activePanelMode = 0 }
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "دفتر مدیریت فروش، تیکت و ارجاع عروس",
+                    color = if (activePanelMode == 0) Color(0xFF1B0B26) else Color(0xFFE9D5FF),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (activePanelMode == 1) Color(0xFFD4AF37) else Color.Transparent)
+                    .clickable { activePanelMode = 1 }
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "شخصی‌سازی در محل و ۱۰۰ لایسنس",
+                    color = if (activePanelMode == 1) Color(0xFF1B0B26) else Color(0xFFE9D5FF),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (activePanelMode == 0) {
+            VisitorManagementLedgerSection()
+        } else {
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = if (licenseState.isActivated) Color(0xFF14291B) else Color(0xFF2B131D)
@@ -454,5 +504,6 @@ fun VisitorLicensePanelSection(
             color = Color.Gray,
             fontSize = 11.sp
         )
+        }
     }
 }

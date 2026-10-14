@@ -39,6 +39,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
@@ -67,6 +68,7 @@ fun VoiceoverStudioSection(
     onToggleMusic: () -> Unit,
     onSelectCustomAudio: (Uri, String) -> Unit,
     onVolumeChange: (Float) -> Unit,
+    onTestChime: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val audioPicker = rememberLauncherForActivityResult(
@@ -230,7 +232,36 @@ fun VoiceoverStudioSection(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Instant Speaker & Chime Test Button
+                OutlinedButton(
+                    onClick = onTestChime,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color(0xFFECC34C)
+                    ),
+                    border = BorderStroke(1.dp, Color(0xFFECC34C).copy(alpha = 0.7f)),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .testTag("test_speaker_chime_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.VolumeUp,
+                        contentDescription = null,
+                        tint = Color(0xFFECC34C)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "🔔 تست زنده صدای بلندگو و زنگ سلطنتی (آزمایش بلندی صدا)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFDE68A)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Audio File Picker Button
                 Button(

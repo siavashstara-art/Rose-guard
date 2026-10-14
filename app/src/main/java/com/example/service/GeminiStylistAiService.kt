@@ -21,7 +21,7 @@ import java.net.URL
  */
 object GeminiStylistAiService {
 
-    private const val GEMINI_MODEL = "gemini-2.5-flash"
+    private const val GEMINI_MODEL = "gemini-3.5-flash"
     private const val API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models"
 
     val isApiKeyConfigured: Boolean

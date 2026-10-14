@@ -108,6 +108,11 @@ fun HesitantClientSection(
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Practical Step-by-Step Visual Consultation Guide
+        FacialMatchingPracticalGuideCard()
+
         Spacer(modifier = Modifier.height(20.dp))
 
         // Step 1: Face Shape

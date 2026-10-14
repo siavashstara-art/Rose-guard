@@ -274,6 +274,10 @@ class SalonYarViewModel(application: Application) : AndroidViewModel(application
         aiVoiceService.setVolume(vol)
     }
 
+    fun playTestChime() {
+        aiVoiceService.playTestChime()
+    }
+
     // --- Story Maker Actions ---
     fun setStoryTemplate(template: StoryTemplate) {
         _storyDraft.value = _storyDraft.value.copy(
