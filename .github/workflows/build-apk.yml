@@ -24,11 +24,31 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Prepare Signing Keystore
+      - name: Prepare Debug and Release Keystores
         run: |
-          # Remove existing keystore if present to prevent "alias <upload> already exists"
+          # 1. Guarantee debug.keystore exists for signing config 'debugConfig'
+          if [ ! -f "debug.keystore" ]; then
+            if [ -f "debug.keystore.base64" ]; then
+              echo "Restoring debug.keystore from debug.keystore.base64..."
+              base64 -d debug.keystore.base64 > debug.keystore
+            else
+              echo "Generating standard debug.keystore..."
+              keytool -genkeypair -v \
+                -keystore debug.keystore \
+                -alias androiddebugkey \
+                -keyalg RSA \
+                -keysize 2048 \
+                -validity 10000 \
+                -storepass "android" \
+                -keypass "android" \
+                -dname "CN=Android Debug, O=Android, C=US"
+            fi
+          fi
+          echo "debug.keystore ready."
+
+          # 2. Prepare upload keystore for release build without alias collision
           rm -f my-upload-key.jks
-          echo "Generating clean CI upload keystore for APK..."
+          echo "Generating clean CI upload keystore for release APK..."
           keytool -genkeypair -v \
             -keystore my-upload-key.jks \
             -alias upload \
