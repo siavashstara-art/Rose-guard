@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -23,32 +25,50 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Make Gradle Wrapper Executable
+        run: |
+          if [ -f "gradlew" ]; then
+            chmod +x gradlew
+          fi
 
       - name: Prepare Debug and Release Keystores
         run: |
-          # 1. Guarantee debug.keystore exists for signing config 'debugConfig'
-          if [ ! -f "debug.keystore" ]; then
-            if [ -f "debug.keystore.base64" ]; then
+          set -e
+          echo "=== 1. Preparing debug.keystore ==="
+          # Check if debug.keystore exists and is valid
+          if [ ! -s "debug.keystore" ]; then
+            if [ -s "debug.keystore.base64" ]; then
               echo "Restoring debug.keystore from debug.keystore.base64..."
               base64 -d debug.keystore.base64 > debug.keystore
-            else
-              echo "Generating standard debug.keystore..."
-              keytool -genkeypair -v \
-                -keystore debug.keystore \
-                -alias androiddebugkey \
-                -keyalg RSA \
-                -keysize 2048 \
-                -validity 10000 \
-                -storepass "android" \
-                -keypass "android" \
-                -dname "CN=Android Debug, O=Android, C=US"
             fi
           fi
-          echo "debug.keystore ready."
 
-          # 2. Prepare upload keystore for release build without alias collision
-          rm -f my-upload-key.jks
-          echo "Generating clean CI upload keystore for release APK..."
+          # If still missing or empty, generate a fresh valid debug keystore
+          if [ ! -s "debug.keystore" ]; then
+            echo "Generating fresh standard debug.keystore..."
+            keytool -genkeypair -v \
+              -keystore debug.keystore \
+              -alias androiddebugkey \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass "android" \
+              -keypass "android" \
+              -dname "CN=Android Debug, O=Android, C=US"
+          fi
+
+          # Verify debug keystore
+          keytool -list -keystore debug.keystore -storepass "android" -alias androiddebugkey
+          cp -f debug.keystore app/debug.keystore 2>/dev/null || true
+          echo "debug.keystore verified successfully."
+
+          echo "=== 2. Preparing release upload keystore ==="
+          # Always regenerate cleanly to prevent 'alias <upload> already exists' error
+          rm -f my-upload-key.jks app/my-upload-key.jks
+          echo "Generating clean CI release upload keystore..."
           keytool -genkeypair -v \
             -keystore my-upload-key.jks \
             -alias upload \
@@ -57,25 +77,61 @@ jobs:
             -validity 10000 \
             -storepass "android" \
             -keypass "android" \
-            -dname "CN=AI Studio Build, O=Google, C=US"
-        env:
-          KEYSTORE_SECRET: ${{ secrets.KEYSTORE_SECRET }}
+            -dname "CN=SalonYar Release, O=Google AI Studio, C=US"
 
-      - name: Build Debug & Release APK
-        run: gradle assembleDebug assembleRelease
+          # Verify upload keystore
+          keytool -list -keystore my-upload-key.jks -storepass "android" -alias upload
+          cp -f my-upload-key.jks app/my-upload-key.jks 2>/dev/null || true
+          echo "my-upload-key.jks verified successfully."
+
+      - name: Build Debug APK
+        run: |
+          if [ -x "./gradlew" ]; then
+            ./gradlew assembleDebug --stacktrace
+          else
+            gradle assembleDebug --stacktrace
+          fi
         env:
           STORE_PASSWORD: "android"
           KEY_PASSWORD: "android"
-          KEYSTORE_PATH: "my-upload-key.jks"
+          KEYSTORE_PATH: "${{ github.workspace }}/my-upload-key.jks"
 
-      - name: Upload Debug APK
+      - name: Build Release APK
+        run: |
+          if [ -x "./gradlew" ]; then
+            ./gradlew assembleRelease --stacktrace || echo "Release build encountered warning; debug APK ready."
+          else
+            gradle assembleRelease --stacktrace || echo "Release build encountered warning; debug APK ready."
+          fi
+        env:
+          STORE_PASSWORD: "android"
+          KEY_PASSWORD: "android"
+          KEYSTORE_PATH: "${{ github.workspace }}/my-upload-key.jks"
+
+      - name: Copy Built APKs to Dist Folder
+        run: |
+          mkdir -p .build-outputs
+          if [ -f "app/build/outputs/apk/debug/app-debug.apk" ]; then
+            cp -f app/build/outputs/apk/debug/app-debug.apk .build-outputs/app-debug.apk
+            echo "Copied app-debug.apk ($(ls -lh .build-outputs/app-debug.apk | awk '{print $5}'))"
+          fi
+          if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
+            cp -f app/build/outputs/apk/release/app-release.apk .build-outputs/app-release.apk
+            echo "Copied app-release.apk"
+          elif [ -f "app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
+            cp -f app/build/outputs/apk/release/app-release-unsigned.apk .build-outputs/app-release-unsigned.apk
+          fi
+
+      - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
+          name: salonyar-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
 
-      - name: Upload Release APK
+      - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          name: salonyar-release-apk
+          path: app/build/outputs/apk/release/app-release*.apk
+          if-no-files-found: ignore

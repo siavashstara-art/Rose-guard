@@ -144,9 +144,9 @@ fun VisitorLicensePanelSection(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "دفتر مدیریت فروش، تیکت و ارجاع عروس",
+                    text = "📊 داشبورد تحلیلی (Recharts)",
                     color = if (activePanelMode == 0) Color(0xFF1B0B26) else Color(0xFFE9D5FF),
-                    fontSize = 11.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -161,9 +161,26 @@ fun VisitorLicensePanelSection(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "شخصی‌سازی در محل و ۱۰۰ لایسنس",
+                    text = "🤝 مدیریت فروش و تیکت",
                     color = if (activePanelMode == 1) Color(0xFF1B0B26) else Color(0xFFE9D5FF),
-                    fontSize = 11.sp,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (activePanelMode == 2) Color(0xFFD4AF37) else Color.Transparent)
+                    .clickable { activePanelMode = 2 }
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "🔑 لایسنس و برند سالن",
+                    color = if (activePanelMode == 2) Color(0xFF1B0B26) else Color(0xFFE9D5FF),
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -172,6 +189,8 @@ fun VisitorLicensePanelSection(
         Spacer(modifier = Modifier.height(16.dp))
 
         if (activePanelMode == 0) {
+            FinancialAnalyticsDashboardSection()
+        } else if (activePanelMode == 1) {
             VisitorManagementLedgerSection()
         } else {
         Card(
